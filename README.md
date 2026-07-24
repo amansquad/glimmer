@@ -51,7 +51,7 @@ instead of a "last edited" column.
 
 ## Stack
 
-- **Backend**: Node.js, Express, SQLite (built-in `node:sqlite`, requires Node ≥ 22.5) — no external services required
+- **Backend**: Node.js, Express, SQLite (built-in `node:sqlite`, requires Node ≥ 24 to run unflagged) — no external services required
 - **Frontend**: React + TypeScript, Vite, D3.js (force simulation for the star map)
 - **Linking**: notes reference each other via `[[Note Title]]` syntax, parsed server-side into a graph
 

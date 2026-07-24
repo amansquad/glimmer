@@ -8,4 +8,4 @@ services:
     startCommand: node index.js
     envVars:
       - key: NODE_VERSION
-        value: 22.12.0
+        value: 24.14.0
