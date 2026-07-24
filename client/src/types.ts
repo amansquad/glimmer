@@ -26,3 +26,7 @@ export interface Graph {
   nodes: GraphNode[];
   edges: GraphEdge[];
 }
+
+export interface Settings {
+  halfLifeDays: number;
+}

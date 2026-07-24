@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import { randomUUID } from "node:crypto";
 import db from "./db.js";
-import { brightnessOf } from "./decay.js";
+import { brightnessOf, DEFAULT_HALF_LIFE_DAYS } from "./decay.js";
 import { buildGraph } from "./links.js";
 import { extractTags } from "./tags.js";
 
@@ -12,7 +12,12 @@ app.use(express.json());
 
 const now = () => new Date().toISOString();
 
-function toPublicNote(row) {
+function getHalfLifeDays() {
+  const row = db.prepare("SELECT value FROM settings WHERE key = 'halfLifeDays'").get();
+  return row ? Number(row.value) : DEFAULT_HALF_LIFE_DAYS;
+}
+
+function toPublicNote(row, halfLifeDays) {
   return {
     id: row.id,
     title: row.title,
@@ -20,27 +25,45 @@ function toPublicNote(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     lastViewedAt: row.last_viewed_at,
-    brightness: brightnessOf(row.last_viewed_at),
+    brightness: brightnessOf(row.last_viewed_at, halfLifeDays),
     tags: extractTags(row.content),
   };
 }
 
 app.get("/api/notes", (req, res) => {
+  const halfLifeDays = getHalfLifeDays();
   const rows = db.prepare("SELECT * FROM notes ORDER BY updated_at DESC").all();
-  res.json(rows.map(toPublicNote));
+  res.json(rows.map((row) => toPublicNote(row, halfLifeDays)));
 });
 
 app.get("/api/graph", (req, res) => {
+  const halfLifeDays = getHalfLifeDays();
   const rows = db.prepare("SELECT * FROM notes").all();
   const realNodes = rows.map((row) => ({
     id: row.id,
     title: row.title,
-    brightness: brightnessOf(row.last_viewed_at),
+    brightness: brightnessOf(row.last_viewed_at, halfLifeDays),
     tags: extractTags(row.content),
     ghost: false,
   }));
   const { edges, ghostNodes } = buildGraph(rows);
   res.json({ nodes: [...realNodes, ...ghostNodes], edges });
+});
+
+app.get("/api/settings", (req, res) => {
+  res.json({ halfLifeDays: getHalfLifeDays() });
+});
+
+app.put("/api/settings", (req, res) => {
+  const halfLifeDays = Number(req.body.halfLifeDays);
+  if (!Number.isFinite(halfLifeDays) || halfLifeDays <= 0) {
+    return res.status(400).json({ error: "halfLifeDays must be a positive number" });
+  }
+  db.prepare(
+    `INSERT INTO settings (key, value) VALUES ('halfLifeDays', ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+  ).run(String(halfLifeDays));
+  res.json({ halfLifeDays });
 });
 
 app.get("/api/notes/:id", (req, res) => {
@@ -49,7 +72,7 @@ app.get("/api/notes/:id", (req, res) => {
 
   db.prepare("UPDATE notes SET last_viewed_at = ? WHERE id = ?").run(now(), row.id);
   const refreshed = db.prepare("SELECT * FROM notes WHERE id = ?").get(row.id);
-  res.json(toPublicNote(refreshed));
+  res.json(toPublicNote(refreshed, getHalfLifeDays()));
 });
 
 app.post("/api/notes", (req, res) => {
@@ -65,7 +88,7 @@ app.post("/api/notes", (req, res) => {
   ).run(id, title.trim(), content, timestamp, timestamp, timestamp);
 
   const row = db.prepare("SELECT * FROM notes WHERE id = ?").get(id);
-  res.status(201).json(toPublicNote(row));
+  res.status(201).json(toPublicNote(row, getHalfLifeDays()));
 });
 
 app.put("/api/notes/:id", (req, res) => {
@@ -81,7 +104,7 @@ app.put("/api/notes/:id", (req, res) => {
   ).run(title, content, timestamp, timestamp, existing.id);
 
   const row = db.prepare("SELECT * FROM notes WHERE id = ?").get(existing.id);
-  res.json(toPublicNote(row));
+  res.json(toPublicNote(row, getHalfLifeDays()));
 });
 
 app.delete("/api/notes/:id", (req, res) => {
@@ -91,8 +114,9 @@ app.delete("/api/notes/:id", (req, res) => {
 });
 
 app.get("/api/export", (req, res) => {
+  const halfLifeDays = getHalfLifeDays();
   const rows = db.prepare("SELECT * FROM notes ORDER BY created_at ASC").all();
-  res.json(rows.map(toPublicNote));
+  res.json(rows.map((row) => toPublicNote(row, halfLifeDays)));
 });
 
 app.post("/api/import", (req, res) => {

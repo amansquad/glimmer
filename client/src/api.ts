@@ -1,4 +1,4 @@
-import type { Graph, Note } from "./types";
+import type { Graph, Note, Settings } from "./types";
 
 // In local dev, Vite proxies "/api" to the Express server (see vite.config.ts).
 // In production the frontend and backend are deployed separately, so the API's
@@ -30,4 +30,7 @@ export const api = {
   exportNotes: () => request<Note[]>("/export"),
   importNotes: (notes: { title: string; content: string }[]) =>
     request<{ imported: number }>("/import", { method: "POST", body: JSON.stringify({ notes }) }),
+  getSettings: () => request<Settings>("/settings"),
+  updateSettings: (halfLifeDays: number) =>
+    request<Settings>("/settings", { method: "PUT", body: JSON.stringify({ halfLifeDays }) }),
 };

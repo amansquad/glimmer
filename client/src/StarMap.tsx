@@ -21,7 +21,7 @@ function matchesSearch(node: GraphNode, query: string): boolean {
 // Stars keep their place across reloads/edits instead of re-shuffling the whole
 // sky every time the graph refreshes — the map is meant to feel like a place
 // you return to, not a fresh random layout on every save.
-const POSITIONS_KEY = "glimmer-star-positions";
+export const POSITIONS_KEY = "glimmer-star-positions";
 
 function loadPositions(): Record<string, { x: number; y: number }> {
   try {

@@ -36,9 +36,107 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .app-header h1 {
   margin: 0 0 0.25rem;
   letter-spacing: 0.05em;
+}
+
+.info-wrap {
+  position: relative;
+  margin-bottom: 0.25rem;
+}
+
+.info-toggle {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5f5;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.info-panel {
+  position: absolute;
+  top: 130%;
+  left: 0;
+  z-index: 10;
+  width: 300px;
+  background: #171c3a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #cbd5f5;
+}
+
+.info-panel p {
+  margin: 0 0 0.5rem;
+}
+
+.info-panel ul {
+  margin: 0 0 0.75rem;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.info-panel code {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.85em;
+}
+
+.settings-panel {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+}
+
+.settings-input {
+  width: 100%;
+}
+
+.settings-hint {
+  margin: 0;
+  color: #7d87b3;
+  font-size: 0.75rem;
+}
+
+.settings-status {
+  font-size: 0.78rem;
+}
+
+.settings-status.ok {
+  color: #7dd3fc;
+}
+
+.settings-status.error {
+  color: #e0a83c;
+}
+
+.settings-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0.3rem 0;
 }
 
 .app-header p {
@@ -200,6 +298,34 @@ button.danger {
 .star-map {
   flex: 1;
   min-width: 0;
+}
+
+.loading-sky {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: #9aa3c7;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 0 2rem;
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #7dd3fc;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .editor-panel {

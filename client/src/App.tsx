@@ -4,6 +4,8 @@ import { StarMap } from "./StarMap";
 import { NoteEditor } from "./NoteEditor";
 import { FadingStars } from "./FadingStars";
 import { TagLegend } from "./TagLegend";
+import { InfoButton } from "./InfoButton";
+import { SettingsPanel } from "./SettingsPanel";
 import type { Graph, GraphNode, Note } from "./types";
 
 export default function App() {
@@ -12,6 +14,9 @@ export default function App() {
   const [newTitle, setNewTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [showWakingHint, setShowWakingHint] = useState(false);
+  const [halfLifeDays, setHalfLifeDays] = useState(10);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -30,8 +35,38 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    refreshGraph();
-  }, [refreshGraph]);
+    // Render's free tier spins down after inactivity; the first request after
+    // a while can take up to ~50s to wake it. Give the user a reason to wait
+    // instead of staring at an empty sky.
+    const wakingTimer = window.setTimeout(() => setShowWakingHint(true), 3000);
+    api
+      .getGraph()
+      .then(setGraph)
+      .catch((err) => setErrorMessage(describeError(err)))
+      .finally(() => {
+        setIsInitialLoading(false);
+        window.clearTimeout(wakingTimer);
+      });
+    return () => window.clearTimeout(wakingTimer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    api
+      .getSettings()
+      .then((s) => setHalfLifeDays(s.halfLifeDays))
+      .catch(() => {
+        /* fall back to the default half-life silently — not worth an error banner */
+      });
+  }, []);
+
+  const handleHalfLifeSaved = useCallback(
+    (newHalfLifeDays: number) => {
+      setHalfLifeDays(newHalfLifeDays);
+      refreshGraph();
+    },
+    [refreshGraph]
+  );
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -178,7 +213,11 @@ export default function App() {
         </div>
       )}
       <header className="app-header">
-        <h1>✦ Glimmer</h1>
+        <div className="title-row">
+          <h1>✦ Glimmer</h1>
+          <InfoButton />
+          <SettingsPanel halfLifeDays={halfLifeDays} onHalfLifeSaved={handleHalfLifeSaved} />
+        </div>
         <p>Your notes, as a night sky. Revisit a star to keep it burning.</p>
         {realNodes.length > 0 && (
           <p className="sky-stats">
@@ -237,12 +276,23 @@ export default function App() {
       <FadingStars graph={graph} onOpen={handleJumpTo} />
       <TagLegend graph={graph} activeQuery={searchQuery} onTagClick={setSearchQuery} />
       <main className="app-main">
-        <StarMap
-          graph={graph}
-          selectedId={selectedNote?.id ?? null}
-          searchQuery={searchQuery}
-          onSelect={handleSelectNode}
-        />
+        {isInitialLoading ? (
+          <div className="loading-sky">
+            <div className="loading-spinner" />
+            <p>
+              {showWakingHint
+                ? "Waking up the sky… the free-tier backend can take up to a minute to start."
+                : "Loading your sky…"}
+            </p>
+          </div>
+        ) : (
+          <StarMap
+            graph={graph}
+            selectedId={selectedNote?.id ?? null}
+            searchQuery={searchQuery}
+            onSelect={handleSelectNode}
+          />
+        )}
         <NoteEditor
           note={selectedNote}
           graph={graph}

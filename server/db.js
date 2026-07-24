@@ -14,6 +14,11 @@ db.exec(`
     updated_at TEXT NOT NULL,
     last_viewed_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
 
 export default db;

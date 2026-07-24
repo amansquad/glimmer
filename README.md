@@ -41,6 +41,11 @@ Beyond the core star map:
 - **Duplicate-title warning** — since `[[links]]` resolve by title, two notes
   with the same title race for who "wins" a link. The editor now flags this
   the moment it happens instead of leaving it as a silent gotcha.
+- **Settings** — the fade half-life (default 10 days) is configurable from a
+  panel in the header instead of hardcoded, plus a one-click "reset star
+  layout" to clear remembered positions and let the sky re-simulate fresh.
+- **Cold-start aware loading** — on a free-tier backend that spins down when
+  idle, the first load shows a "waking up" message instead of a blank sky.
 
 ## Why this exists
 
@@ -76,8 +81,10 @@ days without touching a note and watch it dim.
 ## How the decay works
 
 Each note stores a `lastViewedAt` timestamp, refreshed whenever it's opened or
-saved. Brightness is `0.5 ^ (daysSinceLastViewed / 10)` — a 10-day half-life —
-clamped so stars never fully vanish. See [`server/decay.js`](server/decay.js).
+saved. Brightness is `0.5 ^ (daysSinceLastViewed / halfLifeDays)`, clamped so
+stars never fully vanish. The half-life defaults to 10 days and is stored
+server-side, adjustable from the ⚙ Settings panel in the header. See
+[`server/decay.js`](server/decay.js) and [`server/index.js`](server/index.js).
 
 ## Deploying it
 
@@ -113,21 +120,23 @@ glimmer/
 ├── vercel.json      Vercel config: build client/ as a static site
 ├── render.yaml      Render blueprint: run server/ as a web service
 ├── server/          Express API + SQLite storage
-│   ├── index.js      routes
-│   ├── db.js          SQLite schema/connection
+│   ├── index.js      routes, incl. /api/settings for the half-life
+│   ├── db.js          SQLite schema/connection (notes + settings tables)
 │   ├── decay.js       brightness/half-life math
 │   ├── links.js       [[wiki-link]] parsing → graph edges + ghost nodes
 │   └── tags.js        #tag extraction
 └── client/          React + TypeScript + D3 frontend
     └── src/
-        ├── StarMap.tsx     D3 force-directed constellation view, persisted layout
-        ├── NoteEditor.tsx  edit/preview, tags, backlinks/outlinks
-        ├── FadingStars.tsx review queue of dimmest notes
-        ├── TagLegend.tsx   clickable tag filter with counts
-        ├── markdown.ts     dependency-free markdown-lite renderer
-        ├── colors.ts       deterministic tag → color hashing
-        ├── api.ts          fetch wrapper, backend URL from VITE_API_BASE_URL
-        └── App.tsx         top-level state, search, and layout
+        ├── StarMap.tsx      D3 force-directed constellation view, persisted layout
+        ├── NoteEditor.tsx   edit/preview, tags, backlinks/outlinks
+        ├── FadingStars.tsx  review queue of dimmest notes
+        ├── TagLegend.tsx    clickable tag filter with counts
+        ├── InfoButton.tsx   "what is this?" popover for cold visitors
+        ├── SettingsPanel.tsx half-life control + reset star layout
+        ├── markdown.ts      dependency-free markdown-lite renderer
+        ├── colors.ts        deterministic tag → color hashing
+        ├── api.ts           fetch wrapper, backend URL from VITE_API_BASE_URL
+        └── App.tsx          top-level state, search, and layout
 ```
 
 ## Ideas for extending it
