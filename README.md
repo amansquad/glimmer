@@ -9,6 +9,19 @@ note resets its clock**. Notes you actually use stay lit; notes you've
 forgotten fade into the background — a visual, ambient form of spaced
 repetition for your own knowledge, instead of another flat list of rows.
 
+Beyond the core star map:
+
+- **Tags → constellation colors** — write `#topic` anywhere in a note and every
+  note sharing that tag glows the same deterministic hue.
+- **Ghost stars** — link to a title that doesn't exist yet (`[[Someday Idea]]`)
+  and it appears as a dashed, unformed star. Click it to instantly create that
+  note — a visible backlog of ideas you've referenced but not written.
+- **Backlinks & outlinks panel** — the editor shows which notes link to the
+  one you're reading and which notes it links out to, one click to jump.
+- **Search** — typing in the search box dims every star that doesn't match
+  the query by title or tag, so the map itself becomes the filter.
+- **Ctrl/Cmd+Enter** to save a note without leaving the keyboard.
+
 ## Why this exists
 
 Most personal-notes apps (and most portfolio projects) are a list or a table.
@@ -54,12 +67,14 @@ glimmer/
 │   ├── index.js      routes
 │   ├── db.js          SQLite schema/connection
 │   ├── decay.js       brightness/half-life math
-│   └── links.js       [[wiki-link]] parsing → graph edges
+│   ├── links.js       [[wiki-link]] parsing → graph edges + ghost nodes
+│   └── tags.js        #tag extraction
 └── client/          React + TypeScript + D3 frontend
     └── src/
         ├── StarMap.tsx    D3 force-directed constellation view
-        ├── NoteEditor.tsx side panel for reading/editing a note
-        └── App.tsx        top-level state and layout
+        ├── NoteEditor.tsx side panel: edit, tags, backlinks/outlinks
+        ├── colors.ts      deterministic tag → color hashing
+        └── App.tsx        top-level state, search, and layout
 ```
 
 ## Ideas for extending it

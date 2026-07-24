@@ -1,16 +1,24 @@
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import type { Graph, GraphNode } from "./types";
+import { colorForTag, DEFAULT_STAR_COLOR } from "./colors";
 
 interface Props {
   graph: Graph;
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  searchQuery: string;
+  onSelect: (node: GraphNode) => void;
 }
 
 type SimNode = GraphNode & d3.SimulationNodeDatum;
 
-export function StarMap({ graph, selectedId, onSelect }: Props) {
+function matchesSearch(node: GraphNode, query: string): boolean {
+  if (!query.trim()) return true;
+  const q = query.trim().toLowerCase();
+  return node.title.toLowerCase().includes(q) || node.tags.some((t) => t.includes(q));
+}
+
+export function StarMap({ graph, selectedId, searchQuery, onSelect }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
@@ -53,32 +61,40 @@ export function StarMap({ graph, selectedId, onSelect }: Props) {
       .join("g")
       .attr("cursor", "pointer");
 
-    starGroup
-      .append("circle")
-      .attr("r", (d) => 6 + d.brightness * 10)
-      .attr("fill", "#fdf6e3")
-      .attr("opacity", (d) => 0.15 + d.brightness * 0.85)
-      .attr("stroke", (d) => (d.id === selectedId ? "#7dd3fc" : "none"))
-      .attr("stroke-width", 2);
+    starGroup.each(function (d) {
+      const g = d3.select(this);
+      const matched = matchesSearch(d, searchQuery);
+      const dimFactor = matched ? 1 : 0.12;
+      const color = d.tags[0] ? colorForTag(d.tags[0]) : DEFAULT_STAR_COLOR;
 
-    starGroup
-      .append("circle")
-      .attr("r", (d) => 14 + d.brightness * 18)
-      .attr("fill", "#fdf6e3")
-      .attr("opacity", (d) => d.brightness * 0.12)
-      .style("pointer-events", "none");
+      g.append("circle")
+        .attr("r", (d.ghost ? 8 : 6 + d.brightness * 10))
+        .attr("fill", d.ghost ? "none" : color)
+        .attr("stroke", d.ghost ? "#7a86b8" : d.id === selectedId ? "#7dd3fc" : "none")
+        .attr("stroke-width", d.ghost ? 1.5 : 2)
+        .attr("stroke-dasharray", d.ghost ? "3,3" : null)
+        .attr("opacity", (d.ghost ? 0.5 : 0.15 + d.brightness * 0.85) * dimFactor);
 
-    starGroup
-      .append("text")
-      .text((d) => d.title)
-      .attr("x", 14)
-      .attr("y", 4)
-      .attr("fill", "#cbd5f5")
-      .attr("opacity", (d) => 0.3 + d.brightness * 0.7)
-      .attr("font-size", 12)
-      .style("pointer-events", "none");
+      if (!d.ghost) {
+        g.append("circle")
+          .attr("r", 14 + d.brightness * 18)
+          .attr("fill", color)
+          .attr("opacity", d.brightness * 0.12 * dimFactor)
+          .style("pointer-events", "none");
+      }
 
-    starGroup.on("click", (_event, d) => onSelect(d.id));
+      g.append("text")
+        .text(d.ghost ? `+ ${d.title}` : d.title)
+        .attr("x", 14)
+        .attr("y", 4)
+        .attr("fill", d.ghost ? "#8891bd" : "#cbd5f5")
+        .attr("font-style", d.ghost ? "italic" : "normal")
+        .attr("opacity", (d.ghost ? 0.6 : 0.3 + d.brightness * 0.7) * dimFactor)
+        .attr("font-size", 12)
+        .style("pointer-events", "none");
+    });
+
+    starGroup.on("click", (_event, d) => onSelect(d));
 
     starGroup.call(
       d3
@@ -112,7 +128,7 @@ export function StarMap({ graph, selectedId, onSelect }: Props) {
     return () => {
       simulation.stop();
     };
-  }, [graph, selectedId, onSelect]);
+  }, [graph, selectedId, searchQuery, onSelect]);
 
   return <svg ref={svgRef} className="star-map" />;
 }

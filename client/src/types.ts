@@ -6,12 +6,15 @@ export interface Note {
   updatedAt: string;
   lastViewedAt: string;
   brightness: number;
+  tags: string[];
 }
 
 export interface GraphNode {
   id: string;
   title: string;
   brightness: number;
+  tags: string[];
+  ghost: boolean;
 }
 
 export interface GraphEdge {

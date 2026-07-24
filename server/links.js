@@ -1,28 +1,54 @@
 const LINK_PATTERN = /\[\[([^\]]+)\]\]/g;
 
 export function extractLinkedTitles(content) {
-  const titles = new Set();
+  const titles = [];
   for (const match of content.matchAll(LINK_PATTERN)) {
-    titles.add(match[1].trim().toLowerCase());
+    const raw = match[1].trim();
+    if (raw) titles.push(raw);
   }
   return titles;
 }
 
-export function buildGraphEdges(notes) {
-  const byLowerTitle = new Map(notes.map((n) => [n.title.trim().toLowerCase(), n.id]));
+// Builds edges between real notes, plus a synthetic "ghost" node for every
+// [[link]] that points at a title with no note yet — an unformed star you
+// can click to bring into being.
+export function buildGraph(notes) {
+  const byLowerTitle = new Map(notes.map((n) => [n.title.trim().toLowerCase(), n]));
+  const ghostsByLowerTitle = new Map();
   const edges = [];
-  const seen = new Set();
+  const seenEdges = new Set();
 
   for (const note of notes) {
-    const linkedTitles = extractLinkedTitles(note.content);
-    for (const title of linkedTitles) {
-      const targetId = byLowerTitle.get(title);
-      if (!targetId || targetId === note.id) continue;
-      const key = [note.id, targetId].sort().join("::");
-      if (seen.has(key)) continue;
-      seen.add(key);
+    const ownLowerTitle = note.title.trim().toLowerCase();
+    for (const rawTitle of extractLinkedTitles(note.content)) {
+      const lowerTitle = rawTitle.toLowerCase();
+      if (lowerTitle === ownLowerTitle) continue;
+
+      let targetId;
+      const existing = byLowerTitle.get(lowerTitle);
+      if (existing) {
+        targetId = existing.id;
+      } else {
+        if (!ghostsByLowerTitle.has(lowerTitle)) {
+          ghostsByLowerTitle.set(lowerTitle, { id: `ghost:${lowerTitle}`, title: rawTitle });
+        }
+        targetId = ghostsByLowerTitle.get(lowerTitle).id;
+      }
+
+      const edgeKey = [note.id, targetId].sort().join("::");
+      if (seenEdges.has(edgeKey)) continue;
+      seenEdges.add(edgeKey);
       edges.push({ source: note.id, target: targetId });
     }
   }
-  return edges;
+
+  const ghostNodes = Array.from(ghostsByLowerTitle.values()).map((g) => ({
+    id: g.id,
+    title: g.title,
+    brightness: 0.12,
+    tags: [],
+    ghost: true,
+  }));
+
+  return { edges, ghostNodes };
 }

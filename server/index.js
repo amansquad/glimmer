@@ -3,7 +3,8 @@ import cors from "cors";
 import { randomUUID } from "node:crypto";
 import db from "./db.js";
 import { brightnessOf } from "./decay.js";
-import { buildGraphEdges } from "./links.js";
+import { buildGraph } from "./links.js";
+import { extractTags } from "./tags.js";
 
 const app = express();
 app.use(cors());
@@ -20,6 +21,7 @@ function toPublicNote(row) {
     updatedAt: row.updated_at,
     lastViewedAt: row.last_viewed_at,
     brightness: brightnessOf(row.last_viewed_at),
+    tags: extractTags(row.content),
   };
 }
 
@@ -30,13 +32,15 @@ app.get("/api/notes", (req, res) => {
 
 app.get("/api/graph", (req, res) => {
   const rows = db.prepare("SELECT * FROM notes").all();
-  const nodes = rows.map((row) => ({
+  const realNodes = rows.map((row) => ({
     id: row.id,
     title: row.title,
     brightness: brightnessOf(row.last_viewed_at),
+    tags: extractTags(row.content),
+    ghost: false,
   }));
-  const edges = buildGraphEdges(rows);
-  res.json({ nodes, edges });
+  const { edges, ghostNodes } = buildGraph(rows);
+  res.json({ nodes: [...realNodes, ...ghostNodes], edges });
 });
 
 app.get("/api/notes/:id", (req, res) => {
