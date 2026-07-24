@@ -24,4 +24,7 @@ export const api = {
   updateNote: (id: string, title: string, content: string) =>
     request<Note>(`/notes/${id}`, { method: "PUT", body: JSON.stringify({ title, content }) }),
   deleteNote: (id: string) => request<void>(`/notes/${id}`, { method: "DELETE" }),
+  exportNotes: () => request<Note[]>("/export"),
+  importNotes: (notes: { title: string; content: string }[]) =>
+    request<{ imported: number }>("/import", { method: "POST", body: JSON.stringify({ notes }) }),
 };

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Graph, Note } from "./types";
 import { colorForTag } from "./colors";
+import { renderMarkdownLite } from "./markdown";
 
 interface Props {
   note: Note | null;
@@ -9,6 +10,7 @@ interface Props {
   onDelete: () => void;
   onClose: () => void;
   onJumpTo: (id: string) => void;
+  onTagClick: (tag: string) => void;
 }
 
 interface RelatedNote {
@@ -17,14 +19,22 @@ interface RelatedNote {
   ghost: boolean;
 }
 
-export function NoteEditor({ note, graph, onSave, onDelete, onClose, onJumpTo }: Props) {
+export function NoteEditor({ note, graph, onSave, onDelete, onClose, onJumpTo, onTagClick }: Props) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [mode, setMode] = useState<"write" | "preview">("preview");
 
   useEffect(() => {
     setTitle(note?.title ?? "");
     setContent(note?.content ?? "");
+    setMode(note?.content ? "preview" : "write");
   }, [note]);
+
+  const nodeIdByLowerTitle = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const n of graph.nodes) map.set(n.title.trim().toLowerCase(), n.id);
+    return map;
+  }, [graph.nodes]);
 
   const related = useMemo<{ backlinks: RelatedNote[]; outlinks: RelatedNote[] }>(() => {
     if (!note) return { backlinks: [], outlinks: [] };
@@ -50,6 +60,19 @@ export function NoteEditor({ note, graph, onSave, onDelete, onClose, onJumpTo }:
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       onSave(title, content);
+      setMode("preview");
+    }
+  };
+
+  const handlePreviewClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const linkTitle = target.dataset.linkTitle;
+    const tag = target.dataset.tag;
+    if (linkTitle) {
+      const id = nodeIdByLowerTitle.get(linkTitle.toLowerCase());
+      if (id) onJumpTo(id);
+    } else if (tag) {
+      onTagClick(tag);
     }
   };
 
@@ -70,20 +93,45 @@ export function NoteEditor({ note, graph, onSave, onDelete, onClose, onJumpTo }:
       {note.tags.length > 0 && (
         <div className="tag-row">
           {note.tags.map((tag) => (
-            <span key={tag} className="tag-chip" style={{ borderColor: colorForTag(tag) }}>
+            <button
+              key={tag}
+              className="tag-chip"
+              style={{ borderColor: colorForTag(tag) }}
+              onClick={() => onTagClick(tag)}
+            >
               #{tag}
-            </span>
+            </button>
           ))}
         </div>
       )}
 
-      <textarea
-        className="content-input"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Write your note. Link with [[Note Title]], tag with #topic. Ctrl+Enter to save."
-      />
+      <div className="mode-tabs">
+        <button className={mode === "write" ? "active" : ""} onClick={() => setMode("write")}>
+          Write
+        </button>
+        <button className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>
+          Preview
+        </button>
+      </div>
+
+      {mode === "write" ? (
+        <textarea
+          className="content-input"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Write your note. Link with [[Note Title]], tag with #topic. Ctrl+Enter to save."
+          autoFocus
+        />
+      ) : (
+        <div
+          className="content-preview"
+          onClick={handlePreviewClick}
+          dangerouslySetInnerHTML={{
+            __html: content.trim() ? renderMarkdownLite(content) : "<em>Nothing here yet — switch to Write.</em>",
+          }}
+        />
+      )}
 
       {(related.outlinks.length > 0 || related.backlinks.length > 0) && (
         <div className="related-notes">
@@ -122,7 +170,13 @@ export function NoteEditor({ note, graph, onSave, onDelete, onClose, onJumpTo }:
           <button className="danger" onClick={onDelete}>
             Delete
           </button>
-          <button className="primary" onClick={() => onSave(title, content)}>
+          <button
+            className="primary"
+            onClick={() => {
+              onSave(title, content);
+              setMode("preview");
+            }}
+          >
             Save
           </button>
         </div>

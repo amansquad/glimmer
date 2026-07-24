@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { StarMap } from "./StarMap";
 import { NoteEditor } from "./NoteEditor";
+import { FadingStars } from "./FadingStars";
 import type { Graph, GraphNode, Note } from "./types";
 
 export default function App() {
@@ -9,6 +10,8 @@ export default function App() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const refreshGraph = useCallback(() => {
     api.getGraph().then(setGraph).catch(console.error);
@@ -17,6 +20,21 @@ export default function App() {
   useEffect(() => {
     refreshGraph();
   }, [refreshGraph]);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      const isTyping = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+      if (e.key === "Escape" && !isTyping) {
+        setSelectedNote(null);
+      } else if (e.key === "/" && !isTyping) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const openRealNote = useCallback((id: string) => {
     api.getNote(id).then(setSelectedNote).catch(console.error);
@@ -44,6 +62,10 @@ export default function App() {
     [graph.nodes, handleSelectNode]
   );
 
+  const handleTagClick = useCallback((tag: string) => {
+    setSearchQuery(tag);
+  }, []);
+
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
     const note = await api.createNote(newTitle.trim(), "");
@@ -61,8 +83,40 @@ export default function App() {
 
   const handleDelete = async () => {
     if (!selectedNote) return;
+    if (!window.confirm(`Delete "${selectedNote.title}"? This can't be undone.`)) return;
     await api.deleteNote(selectedNote.id);
     setSelectedNote(null);
+    refreshGraph();
+  };
+
+  const handleExport = async () => {
+    const notes = await api.exportNotes();
+    const blob = new Blob([JSON.stringify(notes, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "glimmer-export.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = async (file: File) => {
+    const text = await file.text();
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      window.alert("That file isn't valid JSON.");
+      return;
+    }
+    if (!Array.isArray(parsed)) {
+      window.alert("Expected a JSON array of notes (as produced by Export).");
+      return;
+    }
+    const notes = parsed
+      .filter((n): n is { title: string; content?: string } => typeof n?.title === "string")
+      .map((n) => ({ title: n.title, content: n.content ?? "" }));
+    await api.importNotes(notes);
     refreshGraph();
   };
 
@@ -83,14 +137,35 @@ export default function App() {
               + New star
             </button>
           </div>
-          <input
-            className="search-input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search titles and #tags..."
-          />
+          <div className="header-right">
+            <input
+              ref={searchInputRef}
+              className="search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search titles and #tags... (press /)"
+            />
+            <button onClick={handleExport} title="Download all notes as JSON">
+              Export
+            </button>
+            <button onClick={() => importInputRef.current?.click()} title="Import notes from a JSON file">
+              Import
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json"
+              className="hidden-file-input"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImportFile(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
         </div>
       </header>
+      <FadingStars graph={graph} onOpen={handleJumpTo} />
       <main className="app-main">
         <StarMap
           graph={graph}
@@ -105,6 +180,7 @@ export default function App() {
           onDelete={handleDelete}
           onClose={() => setSelectedNote(null)}
           onJumpTo={handleJumpTo}
+          onTagClick={handleTagClick}
         />
       </main>
     </div>

@@ -19,8 +19,18 @@ Beyond the core star map:
 - **Backlinks & outlinks panel** — the editor shows which notes link to the
   one you're reading and which notes it links out to, one click to jump.
 - **Search** — typing in the search box dims every star that doesn't match
-  the query by title or tag, so the map itself becomes the filter.
-- **Ctrl/Cmd+Enter** to save a note without leaving the keyboard.
+  the query by title or tag, so the map itself becomes the filter. Press `/`
+  anywhere to jump into the search box, `Esc` to close the open note.
+- **Write / Preview** — notes render as lightweight markdown (headers, bold,
+  italic, code, lists) with `[[links]]` and `#tags` turned into clickable
+  chips right inside the text, not just in a sidebar.
+- **Fading Stars strip** — a bar under the header lists your dimmest notes
+  (below 50% brightness) so you always have a one-click "what to revisit"
+  queue — the decay concept made actionable instead of just decorative.
+- **Export / Import** — download every note as a single JSON file, or import
+  one back in. No lock-in, no server-side auth to lose your data behind.
+- **Ctrl/Cmd+Enter** to save a note without leaving the keyboard, with a
+  confirmation prompt before any delete.
 
 ## Why this exists
 

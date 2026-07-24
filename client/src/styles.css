@@ -54,8 +54,42 @@ body {
   max-width: 320px;
 }
 
+.header-right {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .search-input {
   width: 220px;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.fading-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.fading-label {
+  color: #9aa3c7;
+  font-size: 0.78rem;
+  margin-right: 0.25rem;
+}
+
+.fading-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.78rem;
 }
 
 input, textarea {
@@ -124,11 +158,58 @@ button.danger {
   padding: 0 0.5rem;
 }
 
+.mode-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.mode-tabs button {
+  background: transparent;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  color: #9aa3c7;
+}
+
+.mode-tabs button.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e6e9f5;
+}
+
 .content-input {
   flex: 1;
   resize: none;
   line-height: 1.5;
   font-family: inherit;
+}
+
+.content-preview {
+  flex: 1;
+  overflow-y: auto;
+  line-height: 1.6;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.1rem;
+}
+
+.content-preview h1, .content-preview h2, .content-preview h3 {
+  margin: 0.6rem 0 0.3rem;
+}
+
+.content-preview code {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.85em;
+}
+
+.content-preview .rendered-link {
+  color: #7dd3fc;
+  cursor: pointer;
+  border-bottom: 1px dotted #7dd3fc;
+}
+
+.content-preview .rendered-tag {
+  color: #c9a8f5;
+  cursor: pointer;
 }
 
 .tag-row {

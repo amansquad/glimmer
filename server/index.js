@@ -90,6 +90,28 @@ app.delete("/api/notes/:id", (req, res) => {
   res.status(204).end();
 });
 
+app.get("/api/export", (req, res) => {
+  const rows = db.prepare("SELECT * FROM notes ORDER BY created_at ASC").all();
+  res.json(rows.map(toPublicNote));
+});
+
+app.post("/api/import", (req, res) => {
+  const incoming = Array.isArray(req.body.notes) ? req.body.notes : [];
+  const insert = db.prepare(
+    `INSERT INTO notes (id, title, content, created_at, updated_at, last_viewed_at)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  );
+
+  let imported = 0;
+  for (const item of incoming) {
+    if (!item.title || !item.title.trim()) continue;
+    const timestamp = now();
+    insert.run(randomUUID(), item.title.trim(), item.content || "", timestamp, timestamp, timestamp);
+    imported += 1;
+  }
+  res.status(201).json({ imported });
+});
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Glimmer server listening on http://localhost:${PORT}`);
