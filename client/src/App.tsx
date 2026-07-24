@@ -3,6 +3,7 @@ import { api } from "./api";
 import { StarMap } from "./StarMap";
 import { NoteEditor } from "./NoteEditor";
 import { FadingStars } from "./FadingStars";
+import { TagLegend } from "./TagLegend";
 import type { Graph, GraphNode, Note } from "./types";
 
 export default function App() {
@@ -166,6 +167,7 @@ export default function App() {
         </div>
       </header>
       <FadingStars graph={graph} onOpen={handleJumpTo} />
+      <TagLegend graph={graph} activeQuery={searchQuery} onTagClick={setSearchQuery} />
       <main className="app-main">
         <StarMap
           graph={graph}

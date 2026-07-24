@@ -92,6 +92,43 @@ body {
   font-size: 0.78rem;
 }
 
+.tag-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tag-legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.78rem;
+  color: #cbd5f5;
+}
+
+.tag-legend-chip.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #7dd3fc;
+}
+
+.tag-legend-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.tag-legend-chip .count {
+  color: #9aa3c7;
+}
+
 input, textarea {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.15);

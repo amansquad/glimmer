@@ -18,6 +18,29 @@ function matchesSearch(node: GraphNode, query: string): boolean {
   return node.title.toLowerCase().includes(q) || node.tags.some((t) => t.includes(q));
 }
 
+// Stars keep their place across reloads/edits instead of re-shuffling the whole
+// sky every time the graph refreshes — the map is meant to feel like a place
+// you return to, not a fresh random layout on every save.
+const POSITIONS_KEY = "glimmer-star-positions";
+
+function loadPositions(): Record<string, { x: number; y: number }> {
+  try {
+    return JSON.parse(localStorage.getItem(POSITIONS_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+function savePositions(nodes: SimNode[]) {
+  const positions: Record<string, { x: number; y: number }> = {};
+  for (const n of nodes) {
+    if (typeof n.x === "number" && typeof n.y === "number") {
+      positions[n.id] = { x: n.x, y: n.y };
+    }
+  }
+  localStorage.setItem(POSITIONS_KEY, JSON.stringify(positions));
+}
+
 export function StarMap({ graph, selectedId, searchQuery, onSelect }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -28,7 +51,11 @@ export function StarMap({ graph, selectedId, searchQuery, onSelect }: Props) {
     const width = svgRef.current?.clientWidth || 800;
     const height = svgRef.current?.clientHeight || 600;
 
-    const nodes: SimNode[] = graph.nodes.map((n) => ({ ...n }));
+    const storedPositions = loadPositions();
+    const nodes: SimNode[] = graph.nodes.map((n) => {
+      const pos = storedPositions[n.id];
+      return pos ? { ...n, x: pos.x, y: pos.y } : { ...n };
+    });
     const links = graph.edges.map((e) => ({ source: e.source, target: e.target }));
 
     const simulation = d3
@@ -112,6 +139,7 @@ export function StarMap({ graph, selectedId, searchQuery, onSelect }: Props) {
           if (!event.active) simulation.alphaTarget(0);
           d.fx = null;
           d.fy = null;
+          savePositions(nodes);
         })
     );
 
@@ -124,6 +152,8 @@ export function StarMap({ graph, selectedId, searchQuery, onSelect }: Props) {
 
       starGroup.attr("transform", (d) => `translate(${d.x ?? 0},${d.y ?? 0})`);
     });
+
+    simulation.on("end", () => savePositions(nodes));
 
     return () => {
       simulation.stop();

@@ -31,6 +31,10 @@ Beyond the core star map:
   one back in. No lock-in, no server-side auth to lose your data behind.
 - **Ctrl/Cmd+Enter** to save a note without leaving the keyboard, with a
   confirmation prompt before any delete.
+- **A sky that stays put** — star positions persist in `localStorage`, so the
+  map doesn't reshuffle into a new random layout every time you save a note.
+- **Tag legend** — every tag in use appears as a clickable, color-matched
+  chip with a count, letting you browse the sky by topic instead of typing.
 
 ## Why this exists
 
