@@ -36,6 +36,14 @@ export function NoteEditor({ note, graph, onSave, onDelete, onClose, onJumpTo, o
     return map;
   }, [graph.nodes]);
 
+  const isDuplicateTitle = useMemo(() => {
+    const lowerTitle = title.trim().toLowerCase();
+    if (!lowerTitle) return false;
+    return graph.nodes.some(
+      (n) => !n.ghost && n.id !== note?.id && n.title.trim().toLowerCase() === lowerTitle
+    );
+  }, [title, graph.nodes, note?.id]);
+
   const related = useMemo<{ backlinks: RelatedNote[]; outlinks: RelatedNote[] }>(() => {
     if (!note) return { backlinks: [], outlinks: [] };
     const nodesById = new Map(graph.nodes.map((n) => [n.id, n]));
@@ -89,6 +97,12 @@ export function NoteEditor({ note, graph, onSave, onDelete, onClose, onJumpTo, o
           ×
         </button>
       </div>
+
+      {isDuplicateTitle && (
+        <div className="duplicate-warning">
+          Another note already has this title — [[links]] to it may resolve to the wrong one.
+        </div>
+      )}
 
       {note.tags.length > 0 && (
         <div className="tag-row">

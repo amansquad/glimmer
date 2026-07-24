@@ -35,6 +35,12 @@ body {
   font-size: 0.9rem;
 }
 
+.app-header p.sky-stats {
+  margin: -0.5rem 0 0.75rem;
+  font-size: 0.78rem;
+  color: #7d87b3;
+}
+
 .header-controls {
   display: flex;
   justify-content: space-between;
@@ -62,6 +68,21 @@ body {
 
 .search-input {
   width: 220px;
+}
+
+.search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.clear-search {
+  position: absolute;
+  right: 0.3rem;
+  background: transparent;
+  padding: 0.1rem 0.4rem;
+  font-size: 1rem;
+  color: #9aa3c7;
 }
 
 .hidden-file-input {
@@ -247,6 +268,15 @@ button.danger {
 .content-preview .rendered-tag {
   color: #c9a8f5;
   cursor: pointer;
+}
+
+.duplicate-warning {
+  background: rgba(224, 168, 60, 0.12);
+  border: 1px solid rgba(224, 168, 60, 0.4);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.78rem;
+  color: #e0c179;
 }
 
 .tag-row {

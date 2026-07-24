@@ -67,6 +67,10 @@ export default function App() {
     setSearchQuery(tag);
   }, []);
 
+  const realNodes = graph.nodes.filter((n) => !n.ghost);
+  const ghostCount = graph.nodes.length - realNodes.length;
+  const fadingCount = realNodes.filter((n) => n.brightness < 0.5).length;
+
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
     const note = await api.createNote(newTitle.trim(), "");
@@ -126,6 +130,13 @@ export default function App() {
       <header className="app-header">
         <h1>✦ Glimmer</h1>
         <p>Your notes, as a night sky. Revisit a star to keep it burning.</p>
+        {realNodes.length > 0 && (
+          <p className="sky-stats">
+            {realNodes.length} star{realNodes.length === 1 ? "" : "s"}
+            {fadingCount > 0 && ` · ${fadingCount} fading`}
+            {ghostCount > 0 && ` · ${ghostCount} unborn`}
+          </p>
+        )}
         <div className="header-controls">
           <div className="new-note">
             <input
@@ -139,13 +150,20 @@ export default function App() {
             </button>
           </div>
           <div className="header-right">
-            <input
-              ref={searchInputRef}
-              className="search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search titles and #tags... (press /)"
-            />
+            <div className="search-wrap">
+              <input
+                ref={searchInputRef}
+                className="search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search titles and #tags... (press /)"
+              />
+              {searchQuery && (
+                <button className="clear-search" onClick={() => setSearchQuery("")} title="Clear search">
+                  ×
+                </button>
+              )}
+            </div>
             <button onClick={handleExport} title="Download all notes as JSON">
               Export
             </button>

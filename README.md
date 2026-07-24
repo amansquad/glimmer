@@ -35,6 +35,12 @@ Beyond the core star map:
   map doesn't reshuffle into a new random layout every time you save a note.
 - **Tag legend** — every tag in use appears as a clickable, color-matched
   chip with a count, letting you browse the sky by topic instead of typing.
+- **Sky stats** — the header shows a live count of stars, how many are
+  fading, and how many are still unborn (ghosts), for an at-a-glance read
+  of your knowledge base's health.
+- **Duplicate-title warning** — since `[[links]]` resolve by title, two notes
+  with the same title race for who "wins" a link. The editor now flags this
+  the moment it happens instead of leaving it as a silent gotcha.
 
 ## Why this exists
 
