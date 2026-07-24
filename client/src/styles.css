@@ -19,6 +19,18 @@ body {
   height: 100vh;
 }
 
+.error-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1.5rem;
+  background: rgba(122, 47, 63, 0.35);
+  border-bottom: 1px solid rgba(224, 100, 100, 0.4);
+  color: #f3c9c9;
+  font-size: 0.85rem;
+}
+
 .app-header {
   padding: 1.25rem 1.5rem 0.75rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);

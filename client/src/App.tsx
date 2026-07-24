@@ -11,11 +11,22 @@ export default function App() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
+  function describeError(err: unknown): string {
+    if (err instanceof TypeError) {
+      return "Can't reach the Glimmer API. Is the backend running and is VITE_API_BASE_URL set correctly?";
+    }
+    return err instanceof Error ? err.message : "Something went wrong.";
+  }
+
   const refreshGraph = useCallback(() => {
-    api.getGraph().then(setGraph).catch(console.error);
+    api
+      .getGraph()
+      .then(setGraph)
+      .catch((err) => setErrorMessage(describeError(err)));
   }, []);
 
   useEffect(() => {
@@ -38,16 +49,22 @@ export default function App() {
   }, []);
 
   const openRealNote = useCallback((id: string) => {
-    api.getNote(id).then(setSelectedNote).catch(console.error);
+    api
+      .getNote(id)
+      .then(setSelectedNote)
+      .catch((err) => setErrorMessage(describeError(err)));
   }, []);
 
   const handleSelectNode = useCallback(
     (node: GraphNode) => {
       if (node.ghost) {
-        api.createNote(node.title, "").then((note) => {
-          refreshGraph();
-          setSelectedNote(note);
-        });
+        api
+          .createNote(node.title, "")
+          .then((note) => {
+            refreshGraph();
+            setSelectedNote(note);
+          })
+          .catch((err) => setErrorMessage(describeError(err)));
       } else {
         openRealNote(node.id);
       }
@@ -73,39 +90,60 @@ export default function App() {
 
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
-    const note = await api.createNote(newTitle.trim(), "");
-    setNewTitle("");
-    refreshGraph();
-    setSelectedNote(note);
+    setErrorMessage(null);
+    try {
+      const note = await api.createNote(newTitle.trim(), "");
+      setNewTitle("");
+      refreshGraph();
+      setSelectedNote(note);
+    } catch (err) {
+      setErrorMessage(describeError(err));
+    }
   };
 
   const handleSave = async (title: string, content: string) => {
     if (!selectedNote) return;
-    const updated = await api.updateNote(selectedNote.id, title, content);
-    setSelectedNote(updated);
-    refreshGraph();
+    setErrorMessage(null);
+    try {
+      const updated = await api.updateNote(selectedNote.id, title, content);
+      setSelectedNote(updated);
+      refreshGraph();
+    } catch (err) {
+      setErrorMessage(describeError(err));
+    }
   };
 
   const handleDelete = async () => {
     if (!selectedNote) return;
     if (!window.confirm(`Delete "${selectedNote.title}"? This can't be undone.`)) return;
-    await api.deleteNote(selectedNote.id);
-    setSelectedNote(null);
-    refreshGraph();
+    setErrorMessage(null);
+    try {
+      await api.deleteNote(selectedNote.id);
+      setSelectedNote(null);
+      refreshGraph();
+    } catch (err) {
+      setErrorMessage(describeError(err));
+    }
   };
 
   const handleExport = async () => {
-    const notes = await api.exportNotes();
-    const blob = new Blob([JSON.stringify(notes, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "glimmer-export.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    setErrorMessage(null);
+    try {
+      const notes = await api.exportNotes();
+      const blob = new Blob([JSON.stringify(notes, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "glimmer-export.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setErrorMessage(describeError(err));
+    }
   };
 
   const handleImportFile = async (file: File) => {
+    setErrorMessage(null);
     const text = await file.text();
     let parsed: unknown;
     try {
@@ -121,12 +159,24 @@ export default function App() {
     const notes = parsed
       .filter((n): n is { title: string; content?: string } => typeof n?.title === "string")
       .map((n) => ({ title: n.title, content: n.content ?? "" }));
-    await api.importNotes(notes);
-    refreshGraph();
+    try {
+      await api.importNotes(notes);
+      refreshGraph();
+    } catch (err) {
+      setErrorMessage(describeError(err));
+    }
   };
 
   return (
     <div className="app">
+      {errorMessage && (
+        <div className="error-banner">
+          {errorMessage}
+          <button className="icon-button" onClick={() => setErrorMessage(null)} title="Dismiss">
+            ×
+          </button>
+        </div>
+      )}
       <header className="app-header">
         <h1>✦ Glimmer</h1>
         <p>Your notes, as a night sky. Revisit a star to keep it burning.</p>
