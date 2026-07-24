@@ -51,7 +51,7 @@ instead of a "last edited" column.
 
 ## Stack
 
-- **Backend**: Node.js, Express, SQLite (`better-sqlite3`) — no external services required
+- **Backend**: Node.js, Express, SQLite (built-in `node:sqlite`, requires Node ≥ 22.5) — no external services required
 - **Frontend**: React + TypeScript, Vite, D3.js (force simulation for the star map)
 - **Linking**: notes reference each other via `[[Note Title]]` syntax, parsed server-side into a graph
 
@@ -79,10 +79,39 @@ Each note stores a `lastViewedAt` timestamp, refreshed whenever it's opened or
 saved. Brightness is `0.5 ^ (daysSinceLastViewed / 10)` — a 10-day half-life —
 clamped so stars never fully vanish. See [`server/decay.js`](server/decay.js).
 
+## Deploying it
+
+Glimmer is two separate deployables: a static frontend and a stateful API
+server with a local SQLite file. **The backend can't run on Vercel** —
+Vercel only runs stateless serverless functions with an ephemeral
+filesystem, which is incompatible with a persistent SQLite file. Split it
+across two hosts instead:
+
+**Backend → [Render](https://render.com)** (free tier)
+1. New → Blueprint → point it at this repo. `render.yaml` at the repo root
+   already defines the service (Node, `server/` as root dir, free plan).
+2. Once deployed, copy the service URL, e.g. `https://glimmer-api.onrender.com`.
+3. Note: Render's free tier has no persistent disk, so the SQLite file resets
+   on every redeploy (not on every request — it survives fine between them
+   while the service is up). Fine for a demo; add a persistent disk or swap
+   to a hosted Postgres/Turso database for real long-term use.
+
+**Frontend → [Vercel](https://vercel.com)**
+1. Import this repo. The root `vercel.json` tells Vercel to build only
+   `client/` and serve `client/dist`.
+2. In the Vercel project's Settings → Environment Variables, add
+   `VITE_API_BASE_URL` set to `https://<your-render-service>.onrender.com/api`
+   (include the `/api` suffix). Vite bakes this in at build time, so set it
+   *before* the first deploy or trigger a redeploy after adding it.
+3. Redeploy. The frontend will now call your Render-hosted API instead of
+   the local dev proxy.
+
 ## Project structure
 
 ```
 glimmer/
+├── vercel.json      Vercel config: build client/ as a static site
+├── render.yaml      Render blueprint: run server/ as a web service
 ├── server/          Express API + SQLite storage
 │   ├── index.js      routes
 │   ├── db.js          SQLite schema/connection
@@ -91,15 +120,19 @@ glimmer/
 │   └── tags.js        #tag extraction
 └── client/          React + TypeScript + D3 frontend
     └── src/
-        ├── StarMap.tsx    D3 force-directed constellation view
-        ├── NoteEditor.tsx side panel: edit, tags, backlinks/outlinks
-        ├── colors.ts      deterministic tag → color hashing
-        └── App.tsx        top-level state, search, and layout
+        ├── StarMap.tsx     D3 force-directed constellation view, persisted layout
+        ├── NoteEditor.tsx  edit/preview, tags, backlinks/outlinks
+        ├── FadingStars.tsx review queue of dimmest notes
+        ├── TagLegend.tsx   clickable tag filter with counts
+        ├── markdown.ts     dependency-free markdown-lite renderer
+        ├── colors.ts       deterministic tag → color hashing
+        ├── api.ts          fetch wrapper, backend URL from VITE_API_BASE_URL
+        └── App.tsx         top-level state, search, and layout
 ```
 
 ## Ideas for extending it
 
-- Persist star map layout (fixed positions) instead of re-simulating on every load
-- Tag-based coloring of stars (constellations by topic)
-- Export/import as Markdown files for portability
+- A persistent disk or hosted Postgres/Turso for the backend so data survives redeploys
+- Export/import as Markdown files, not just JSON, for portability
 - Multi-user auth if turned into a hosted product
+- List/table view as an accessible alternative to the force-directed map
